@@ -7,6 +7,24 @@ class MoviesController < ApplicationController
   end
 
   def index
+    if session[:ses_params] == nil 
+      session[:ses_params] = { :sort => nil, :ratings => nil }
+      #session[:params[:ratings]] = Hash.new(Movie.all_ratings => 1) # create "checked" hash
+    end
+    redirect = false
+    if params.size == 0 ; redirect = true ; end
+    session[:ses_params].keys.each do |paramkey|
+      # check if params are in params hash, also decide if redirect is needed
+      if params.has_key? paramkey
+        if session[:ses_params][paramkey] != params[paramkey]
+          session[:ses_params][paramkey] = params[paramkey] # if params have changed, overwrite with new ones
+          redirect = true
+        end
+      else
+        redirect = true unless session[:ses_params][paramkey] == nil # if params was missing some session params, redirect to include these session params
+      end
+    end
+    if redirect ; redirect_to movies_path(session[:ses_params]) ; end
     @sort = params[:sort]
     if params[:ratings]
       @checked_ratings = params[:ratings]
@@ -26,7 +44,7 @@ class MoviesController < ApplicationController
   def create
     @movie = Movie.create!(params[:movie])
     flash[:notice] = "#{@movie.title} was successfully created."
-    redirect_to movies_path
+    redirect_to movies_path(session)
   end
 
   def edit
